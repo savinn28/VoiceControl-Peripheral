@@ -1,12 +1,12 @@
 % ============================
-% ÎNCĂRCARE SEMNAL TEST
+% INCARCARE SEMNAL TEST
 % ============================
 
-T = load('test_vocala.txt');       % vocala rostită recent
-T = double(T(:));                  % conversie în coloană
+T = load('test_vocala.txt');      
+T = double(T(:));                  % conversie în coloana
 
 % ============================
-% ÎNCĂRCARE ETICHETE VOCALE
+% ÎNCARCARE ETICHETE VOCALE
 % ============================
 
 etichete.A = load('eticheta_A.txt');
@@ -15,21 +15,17 @@ etichete.I = load('eticheta_I.txt');
 etichete.O = load('eticheta_O.txt');
 etichete.U = load('eticheta_U.txt');
 
-% Conversie în vectori coloană
+% Conversie coloana
 campuri = fieldnames(etichete);
 for i = 1:length(campuri)
     etichete.(campuri{i}) = double(etichete.(campuri{i})(:));
 end
 
-% ============================
-% PARAMETRI
-% ============================
-
 nr_perioade = 3;
 esantioane_per_perioada = 200;
 lungime_fereastra = nr_perioade * esantioane_per_perioada;
 
-% Extragem o fereastră centrală din semnalul T
+% extrag o fereastra centrala din semnalul T
 start_T = round(length(T)/2 - lungime_fereastra/2);
 end_T = start_T + lungime_fereastra - 1;
 T_window = T(start_T:end_T);
@@ -40,14 +36,14 @@ T_window = T(start_T:end_T);
 
 vocale = fieldnames(etichete);
 scoruri_xcorr = zeros(length(vocale), 1);
-scoruri_dtw   = zeros(length(vocale), 1);
+scoruri_dtw   = zeros(length(vocale), 1); %distanta de aliniere DTW cu fiecare eticheta 
 paths = cell(length(vocale), 1);
 
 for i = 1:length(vocale)
     vocala = vocale{i};
     ET = etichete.(vocala);
 
-    % Extragem din eticheta o fereastra de lungime similara
+    % extragere din eticheta o fereastra de lungime similara
     start_ET = round(length(ET)/2 - lungime_fereastra/2);
     end_ET = start_ET + lungime_fereastra - 1;
 
@@ -68,14 +64,14 @@ for i = 1:length(vocale)
 end
 
 % ============================
-% DECIZIE FINALĂ: după DTW
+% DECIZIE FINALA: după DTW
 % ============================
 
 [~, idx_dtw] = min(scoruri_dtw);
 vocala_recunoscuta = vocale{idx_dtw};
 ET_final = etichete.(vocala_recunoscuta);
 
-% Extragem fereastra pentru afisare
+% extrag fereastra pentru afișare
 start_ET = round(length(ET_final)/2 - lungime_fereastra/2);
 ET_window = ET_final(start_ET : start_ET + lungime_fereastra - 1);
 
@@ -86,21 +82,26 @@ for k = 1:size(path,1)
     ET_warped(path(k,1)) = ET_window(path(k,2));
 end
 
-% ============================
-% GRAFIC SUPRAPUNERE (DTW)
-% ============================
+% GRAFIC 1: Suprapunere directa (nealiniata)
+figure;
+plot(T_window, 'b', 'LineWidth', 1.5); hold on;
+plot(ET_window, 'r', 'LineWidth', 1.5);
+legend('Semnal Test', ['Etichetă "', vocala_recunoscuta, '" (nealiniată)']);
+xlabel('Index eșantion'); ylabel('Valoare ADC');
+title(['Suprapunere directă cu vocala "', vocala_recunoscuta, '"']);
+grid on;
 
+% GRAFIC 2: Suprapunere DTW (aliniata)
 figure;
 plot(T_window, 'b', 'LineWidth', 1.5); hold on;
 plot(ET_warped, 'r', 'LineWidth', 1.5);
 legend('Semnal Test', ['Etichetă "', vocala_recunoscuta, '" (DTW aliniată)']);
-xlabel('Index eșantion');
-ylabel('Valoare ADC');
+xlabel('Index eșantion'); ylabel('Valoare ADC');
 title(['Aliniere DTW: vocala "', vocala_recunoscuta, '"']);
 grid on;
 
 % ============================
-% AFIȘARE SCORURI
+% AFISARE SCORURI
 % ============================
 
 fprintf("\nScoruri de corelație maximă (XCORR):\n");
